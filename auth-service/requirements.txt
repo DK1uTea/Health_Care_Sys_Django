@@ -1,0 +1,9 @@
+Django==3.2.19
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.2.2
+psycopg2-binary==2.9.6
+gunicorn==21.2.0
+python-dotenv==1.0.0
+Pillow==9.5.0
+django-cors-headers==4.0.0
+dj-database-url==1.2.0

@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="invoice-header">
+        <div class="row">
+            <div class="col-md-6">
+                <h2>INVOICE</h2>
+            </div>
+            <div class="col-md-6 text-right">
+                <h4>Invoice #{{ bill.id|truncatechars:8 }}</h4>
+                <p>Date: {{ bill.generated_date|date:"Y-m-d" }}</p>
+                <p>Due Date: {{ bill.due_date|date:"Y-m-d" }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row invoice-info">
+        <div class="col-md-6">
+            <h5>Billed To:</h5>
+            <address>
+                <strong>{{ patient.first_name }} {{ patient.last_name }}</strong><br>
+                {{ patient.address|linebreaksbr }}<br>
+                Email: {{ patient.email }}<br>
+                Phone: {{ patient.phone_number }}
+            </address>
+        </div>
+        <div class="col-md-6 text-right">
+            <h5>HealthCare System</h5>
+            <address>
+                123 Medical Center Dr<br>
+                City, State 12345<br>
+                Phone: (123) 456-7890<br>
+                Email: billing@healthcare-system.com
+            </address>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4>Bill Items</h4>
+                </div>
+                <div class="panel-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Description</th>
+                                <th class="text-right">Quantity</th>
+                                <th class="text-right">Unit Price</th>
+                                <th class="text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in bill.items.all %}
+                            <tr>
+                                <td>{{ item.service_item.name }}</td>
+                                <td>{{ item.service_item.description }}</td>
+                                <td class="text-right">{{ item.quantity }}</td>
+                                <td class="text-right">${{ item.unit_price|floatformat:2 }}</td>
+                                <td class="text-right">${{ item.total_price|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3"></td>
+                                <td class="text-right"><strong>Subtotal:</strong></td>
+                                <td class="text-right">${{ bill.total_amount|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3"></td>
+                                <td class="text-right"><strong>Tax ({{ tax_percent }}%):</strong></td>
+                                <td class="text-right">${{ bill.tax|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3"></td>
+                                <td class="text-right"><strong>Discount:</strong></td>
+                                <td class="text-right">${{ bill.discount|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3"></td>
+                                <td class="text-right"><strong>Total:</strong></td>
+                                <td class="text-right">${{ bill.final_amount|floatformat:2 }}</td>
+                            </tr>
+                            {% if bill.payments.all %}
+                            <tr>
+                                <td colspan="3"></td>
+                                <td class="text-right"><strong>Amount Paid:</strong></td>
+                                <td class="text-right">${{ amount_paid|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3"></td>
+                                <td class="text-right"><strong>Balance Due:</strong></td>
+                                <td class="text-right">${{ balance_due|floatformat:2 }}</td>
+                            </tr>
+                            {% endif %}
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if bill.payments.all %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4>Payment History</h4>
+                </div>
+                <div class="panel-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Payment Method</th>
+                                <th>Reference</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in bill.payments.all %}
+                            <tr>
+                                <td>{{ payment.payment_date|date:"Y-m-d H:i" }}</td>
+                                <td>${{ payment.amount|floatformat:2 }}</td>
+                                <td>{{ payment.get_payment_method_display }}</td>
+                                <td>{{ payment.transaction_reference }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if bill.status != 'PAID' and user.user_type == 'PATIENT' %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4>Make a Payment</h4>
+                </div>
+                <div class="panel-body">
+                    <form method="post" action="{% url 'make_payment' bill.id %}">
+                        {% csrf_token %}
+                        <div class="form-row">
+                            <div class="form-group col-md-4">
+                                <label for="amount">Amount</label>
+                                <input type="number" class="form-control" id="amount" name="amount" 
+                                       step="0.01" min="0.01" max="{{ balance_due }}" required value="{{ balance_due }}">
+                            </div>
+                            <div class="form-group col-md-4">
+                                <label for="payment_method">Payment Method</label>
+                                <select class="form-control" id="payment_method" name="payment_method" required>
+                                    <option value="CARD">Credit/Debit Card</option>
+                                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                                    <option value="MOBILE_PAYMENT">Mobile Payment</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-md-4">
+                                <label>&nbsp;</label>
+                                <button type="submit" class="btn btn-primary btn-block">Process Payment</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="row">
+        <div class="col-md-12 text-center">
+            <a href="{% url 'download_invoice_pdf' bill.id %}" class="btn btn-info">Download PDF</a>
+            {% if user.user_type != 'PATIENT' and bill.status != 'CANCELLED' %}
+            <a href="{% url 'edit_bill' bill.id %}" class="btn btn-secondary">Edit Invoice</a>
+            {% endif %}
+            <a href="{% url 'patient_bills' %}" class="btn btn-default">Back to Bills</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

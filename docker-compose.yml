@@ -1,0 +1,221 @@
+services:
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgres://postgres:postgres@gateway-db:5432/gateway
+    depends_on:
+      - auth-service
+      - ehr-service
+      - appointment-service
+      - pharmacy-service
+      - lab-service
+      - billing-service
+      - ai-service
+      - gateway-db
+    networks:
+      - healthcare-network
+    
+  gateway-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=gateway
+    volumes:
+      - gateway-data:/var/lib/postgresql/data
+    networks:
+      - healthcare-network
+
+  # Authentication Service
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "8001:8000"
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgres://postgres:postgres@auth-db:5432/auth
+      - POSTGRES_PASSWORD=postgres
+    depends_on:
+      - auth-db
+    networks:
+      healthcare-network: {}  # This is the correct format - as a mapping
+
+  auth-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=auth
+    volumes:
+      - auth-data:/var/lib/postgresql/data
+    networks:
+      - healthcare-network
+
+  # EHR Service
+  ehr-service:
+    build: ./ehr-service
+    ports:
+      - "8002:8001"  # Map to different port on host
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgres://postgres:postgres@ehr-db:5432/ehr
+    depends_on:
+      - ehr-db
+    networks:
+      - healthcare-network
+
+  ehr-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ehr
+    volumes:
+      - ehr-data:/var/lib/postgresql/data
+    networks:
+      - healthcare-network
+
+  # Appointment Service
+  appointment-service:
+    build: ./appointment-service
+    ports:
+      - "8003:8002"  # Map to different port on host
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgres://postgres:postgres@appointment-db:5432/appointment
+    depends_on:
+      - appointment-db
+    networks:
+      - healthcare-network
+
+  appointment-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=appointment
+    volumes:
+      - appointment-data:/var/lib/postgresql/data
+    networks:
+      - healthcare-network
+
+  # Pharmacy Service
+  pharmacy-service:
+    build: ./pharmacy-service
+    ports:
+      - "8004:8003"  # Map to different port on host
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgres://postgres:postgres@pharmacy-db:5432/pharmacy
+    depends_on:
+      - pharmacy-db
+    networks:
+      - healthcare-network
+
+  pharmacy-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=pharmacy
+    volumes:
+      - pharmacy-data:/var/lib/postgresql/data
+    networks:
+      - healthcare-network
+
+  # Lab Service
+  lab-service:
+    build: ./lab-service
+    ports:
+      - "8005:8004"  # Map to different port on host
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgres://postgres:postgres@lab-db:5432/lab
+    depends_on:
+      - lab-db
+    volumes:
+      - lab-media:/app/media
+    networks:
+      - healthcare-network
+
+  lab-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=lab
+    volumes:
+      - lab-data:/var/lib/postgresql/data
+    networks:
+      - healthcare-network
+
+  # Billing Service
+  billing-service:
+    build: ./billing-service
+    ports:
+      - "8006:8005"  # Map to different port on host
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgres://postgres:postgres@billing-db:5432/billing
+    depends_on:
+      - billing-db
+    networks:
+      - healthcare-network
+
+  billing-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=billing
+    volumes:
+      - billing-data:/var/lib/postgresql/data
+    networks:
+      - healthcare-network
+
+  # AI Service
+  ai-service:
+    build: ./ai-service
+    ports:
+      - "8007:8006"  # Map to different port on host
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgres://postgres:postgres@ai-db:5432/ai
+    depends_on:
+      - ai-db
+    volumes:
+      - ai-models:/app/models
+    networks:
+      - healthcare-network
+
+  ai-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ai
+    volumes:
+      - ai-data:/var/lib/postgresql/data
+    networks:
+      - healthcare-network
+
+networks:
+  healthcare-network:
+    driver: bridge
+
+volumes:
+  gateway-data:
+  auth-data:
+  ehr-data:
+  appointment-data:
+  pharmacy-data:
+  lab-data:
+  lab-media:
+  billing-data:
+  ai-data:
+  ai-models:
+

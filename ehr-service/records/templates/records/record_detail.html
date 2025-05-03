@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Medical Record</h2>
+    <div class="record-details">
+        <h3>{{ record.title }}</h3>
+        <p><strong>Date:</strong> {{ record.created_at|date:"Y-m-d H:i" }}</p>
+        <p><strong>Type:</strong> {{ record.record_type }}</p>
+        <p><strong>Doctor:</strong> {{ record.doctor_name }}</p>
+        
+        <div class="record-description">
+            <h4>Description</h4>
+            <p>{{ record.description }}</p>
+        </div>
+        
+        <div class="diagnoses">
+            <h4>Diagnoses</h4>
+            {% if record.diagnoses.all %}
+            <ul>
+                {% for diagnosis in record.diagnoses.all %}
+                <li>
+                    <strong>{{ diagnosis.diagnosis_name }}</strong> ({{ diagnosis.diagnosis_code }})
+                    <p>{{ diagnosis.diagnosis_details }}</p>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>No diagnoses recorded.</p>
+            {% endif %}
+            
+            <button class="btn btn-primary" data-toggle="modal" data-target="#aiDiagnosisModal">
+                Use AI Diagnosis Assistant
+            </button>
+        </div>
+        
+        <div class="prescriptions">
+            <h4>Prescriptions</h4>
+            {% if record.prescriptions.all %}
+            <ul>
+                {% for prescription in record.prescriptions.all %}
+                <li>
+                    <strong>{{ prescription.medication_name }}</strong>
+                    <p>Dosage: {{ prescription.dosage }}, Frequency: {{ prescription.frequency }}</p>
+                    <p>Duration: {{ prescription.duration }}</p>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>No prescriptions recorded.</p>
+            {% endif %}
+        </div>
+        
+        <a href="{% url 'patient_records' record.patient.id %}" class="btn btn-secondary">Back to Patient Records</a>
+    </div>
+</div>
+
+<!-- AI Diagnosis Modal -->
+<div class="modal fade" id="aiDiagnosisModal" tabindex="-1" role="dialog" aria-labelledby="aiDiagnosisModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="aiDiagnosisModalLabel">AI Diagnostic Assistant</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="aiDiagnosisForm">
+                    <div class="form-group">
+                        <label for="symptoms">Enter Patient Symptoms (one per line)</label>
+                        <textarea class="form-control" id="symptoms" rows="5"></textarea>
+                    </div>
+                    <div id="aiResults" style="display:none;">
+                        <h6>AI Suggested Diagnoses:</h6>
+                        <ul id="diagnosisList"></ul>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="analyzeBtn">Analyze Symptoms</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Simple JS to handle the AI diagnosis request
+    document.getElementById('analyzeBtn').addEventListener('click', function() {
+        const symptoms = document.getElementById('symptoms').value.split('\n').filter(s => s.trim() !== '');
+        if (symptoms.length === 0) {
+            alert('Please enter at least one symptom');
+            return;
+        }
+        
+        // In a real app, this would make an AJAX request to your backend
+        // For demo, we'll just show mock results
+        document.getElementById('aiResults').style.display = 'block';
+        const diagnosesList = document.getElementById('diagnosisList');
+        diagnosesList.innerHTML = '';
+        
+        const mockDiagnoses = [
+            {name: "Acute upper respiratory infection", confidence: 0.82, icd_code: "J06.9"},
+            {name: "Acute pharyngitis", confidence: 0.67, icd_code: "J02.9"},
+            {name: "Acute sinusitis", confidence: 0.45, icd_code: "J01.9"}
+        ];
+        
+        mockDiagnoses.forEach(d => {
+            const li = document.createElement('li');
+            li.innerHTML = `<strong>${d.name}</strong> (${d.icd_code}) - Confidence: ${(d.confidence*100).toFixed(1)}%`;
+            diagnosesList.appendChild(li);
+        });
+    });
+</script>
+{% endblock %}

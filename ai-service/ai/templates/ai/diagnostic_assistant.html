@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>AI Diagnostic Assistant</h2>
+    
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4>Symptom Analysis</h4>
+        </div>
+        <div class="card-body">
+            <form id="symptomForm">
+                <div class="form-group">
+                    <label for="patientSelect">Patient</label>
+                    <select class="form-control" id="patientSelect" required>
+                        <option value="">-- Select Patient --</option>
+                        {% for patient in patients %}
+                        <option value="{{ patient.id }}">{{ patient.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Patient Information</label>
+                    <div id="patientInfo" class="card p-3 bg-light" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Name:</strong> <span id="patientName"></span></p>
+                                <p><strong>Age:</strong> <span id="patientAge"></span></p>
+                                <p><strong>Gender:</strong> <span id="patientGender"></span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Blood Type:</strong> <span id="patientBloodType"></span></p>
+                                <p><strong>Allergies:</strong> <span id="patientAllergies"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="symptomsInput">Enter Symptoms</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="symptomsInput" placeholder="Enter a symptom">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="addSymptomBtn">Add</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Symptoms List</label>
+                    <div class="card p-2">
+                        <ul id="symptomsList" class="list-group list-group-flush">
+                            <li class="list-group-item text-muted">No symptoms added yet</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <button type="button" id="analyzeBtn" class="btn btn-primary btn-lg btn-block" disabled>
+                        Analyze Symptoms
+                    </button>
+                </div>
+            </form>
+            
+            <div id="resultsSection" style="display: none;">
+                <hr>
+                <h4>AI Diagnostic Suggestions</h4>
+                
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle"></i> 
+                    These suggestions are provided as decision support and should be verified by a healthcare professional.
+                </div>
+                
+                <div id="diagnosisResults"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Simplified client-side functionality
+    $(document).ready(function() {
+        let symptoms = [];
+        
+        // Handle patient selection
+        $('#patientSelect').change(function() {
+            const patientId = $(this).val();
+            if (patientId) {
+                // In a real app, this would fetch patient data from your API
+                fetchPatientInfo(patientId);
+            } else {
+                $('#patientInfo').hide();
+            }
+            updateAnalyzeButton();
+        });
+        
+        // Add symptom button
+        $('#addSymptomBtn').click(function() {
+            const symptom = $('#symptomsInput').val().trim();
+            if (symptom) {
+                addSymptom(symptom);
+                $('#symptomsInput').val('').focus();
+            }
+        });
+        
+        // Also add symptom when pressing Enter
+        $('#symptomsInput').keypress(function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                $('#addSymptomBtn').click();
+            }
+        });
+        
+        // Analyze button
+        $('#analyzeBtn').click(function() {
+            analyzeSymptomsWithAI();
+        });
+        
+        function addSymptom(symptom) {
+            if (symptoms.indexOf(symptom) === -1) {
+                symptoms.push(symptom);
+                
+                if (symptoms.length === 1) {
+                    // Clear the "No symptoms" message
+                    $('#symptomsList').empty();
+                }
+                
+                const listItem = $('<li class="list-group-item d-flex justify-content-between align-items-center"></li>');
+                listItem.text(symptom);
+                
+                const removeBtn = $('<button class="btn btn-sm btn-outline-danger"><i class="fas fa-times"></i></button>');
+                removeBtn.click(function() {
+                    symptoms = symptoms.filter(s => s !== symptom);
+                    listItem.remove();
+                    
+                    if (symptoms.length === 0) {
+                        $('#symptomsList').html('<li class="list-group-item text-muted">No symptoms added yet</li>');
+                    }
+                    
+                    updateAnalyzeButton();
+                });
+                
+                listItem.append(removeBtn);
+                $('#symptomsList').append(listItem);
+                
+                updateAnalyzeButton();
+            }
+        }
+        
+        function updateAnalyzeButton() {
+            $('#analyzeBtn').prop('disabled', symptoms.length === 0 || $('#patientSelect').val() === '');
+        }
+        
+        function fetchPatientInfo(patientId) {
+            // In a real app, this would be an AJAX call to your API
+            // For demo purposes, we'll use mock data
+            const mockPatient = {
+                id: patientId,
+                full_name: 'John Doe',
+                age: 45,
+                gender: 'Male',
+                blood_type: 'O+',
+                allergies: 'Penicillin, Peanuts'
+            };
+            
+            $('#patientName').text(mockPatient.full_name);
+            $('#patientAge').text(mockPatient.age);
+            $('#patientGender').text(mockPatient.gender);
+            $('#patientBloodType').text(mockPatient.blood_type);
+            $('#patientAllergies').text(mockPatient.allergies);
+            $('#patientInfo').show();
+        }
+        
+        function analyzeSymptomsWithAI() {
+            $('#analyzeBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analyzing...');
+            
+            // In a real app, this would be an AJAX call to your API
+            // For demo purposes, we'll simulate a delayed response with mock data
+            setTimeout(function() {
+                const mockResults = {
+                    diagnoses: [
+                        {
+                            icd_code: "J06.9",
+                            name: "Acute upper respiratory infection",
+                            confidence: 0.82
+                        },
+                        {
+                            icd_code: "J02.9",
+                            name: "Acute pharyngitis",
+                            confidence: 0.67
+                        },
+                        {
+                            icd_code: "J01.9",
+                            name: "Acute sinusitis",
+                            confidence: 0.45
+                        }
+                    ]
+                };
+                
+                displayResults(mockResults);
+                $('#analyzeBtn').prop('disabled', false).text('Analyze Symptoms');
+            }, 1500);
+        }
+        
+        function displayResults(results) {
+            const resultsDiv = $('#diagnosisResults');
+            resultsDiv.empty();
+            
+            results.diagnoses.forEach((diagnosis, index) => {
+                const card = $('<div class="card mb-3"></div>');
+                const confidencePercent = Math.round(diagnosis.confidence * 100);
+                const cardClass = index === 0 ? 'bg-primary text-white' : (confidencePercent > 60 ? 'bg-info text-white' : 'bg-light');
+                
+                card.html(`
+                    <div class="card-header ${cardClass}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">${diagnosis.name}</h5>
+                            <span class="badge badge-light">${diagnosis.icd_code}</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: ${confidencePercent}%" 
+                                 aria-valuenow="${confidencePercent}" aria-valuemin="0" aria-valuemax="100">
+                                ${confidencePercent}%
+                            </div>
+                        </div>
+                        <p class="mb-0">Confidence Level: ${confidencePercent}%</p>
+                    </div>
+                `);
+                
+                resultsDiv.append(card);
+            });
+            
+            $('#resultsSection').show();
+        }
+    });
+</script>
+{% endblock %}

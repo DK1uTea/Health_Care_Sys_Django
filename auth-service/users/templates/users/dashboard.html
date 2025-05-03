@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Welcome to Your Healthcare Dashboard</h2>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4>Profile Information</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Name:</strong> {{ user.first_name }} {{ user.last_name }}</p>
+                    <p><strong>Email:</strong> {{ user.email }}</p>
+                    <p><strong>Username:</strong> {{ user.username }}</p>
+                    <p><strong>User Type:</strong> {{ user.user_type }}</p>
+                    <a href="#" class="btn btn-outline-primary">Edit Profile</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            {% if user.user_type == 'PATIENT' %}
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4>Patient Quick Links</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-calendar-alt fa-3x text-primary mb-3"></i>
+                                    <h5>Appointments</h5>
+                                    <p>View or schedule appointments</p>
+                                    <a href="/appointments/" class="btn btn-sm btn-primary">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-file-medical-alt fa-3x text-success mb-3"></i>
+                                    <h5>Medical Records</h5>
+                                    <p>Access your medical history</p>
+                                    <a href="/ehr/" class="btn btn-sm btn-success">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-pills fa-3x text-warning mb-3"></i>
+                                    <h5>Prescriptions</h5>
+                                    <p>View your medications</p>
+                                    <a href="/pharmacy/" class="btn btn-sm btn-warning">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-flask fa-3x text-info mb-3"></i>
+                                    <h5>Lab Results</h5>
+                                    <p>Check your test results</p>
+                                    <a href="/lab/" class="btn btn-sm btn-info">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% elif user.user_type == 'DOCTOR' %}
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4>Doctor Quick Links</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-calendar-check fa-3x text-primary mb-3"></i>
+                                    <h5>Appointments</h5>
+                                    <p>View your schedule</p>
+                                    <a href="/appointments/" class="btn btn-sm btn-primary">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-user-injured fa-3x text-danger mb-3"></i>
+                                    <h5>Patient Records</h5>
+                                    <p>Access patient information</p>
+                                    <a href="/ehr/" class="btn btn-sm btn-danger">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-brain fa-3x text-info mb-3"></i>
+                                    <h5>AI Assistant</h5>
+                                    <p>Diagnostic help</p>
+                                    <a href="/ai/" class="btn btn-sm btn-info">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-vial fa-3x text-warning mb-3"></i>
+                                    <h5>Lab Orders</h5>
+                                    <p>Request tests</p>
+                                    <a href="/lab/" class="btn btn-sm btn-warning">Go</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="card mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4>Recent Activity</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Logged in successfully</h5>
+                                <small>Just now</small>
+                            </div>
+                            <p class="mb-1">You logged into the Healthcare System.</p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

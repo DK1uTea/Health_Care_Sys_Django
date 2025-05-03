@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Patient Medical Records</h2>
+    <div class="patient-info">
+        <h3>{{ patient.first_name }} {{ patient.last_name }}</h3>
+        <p><strong>MRN:</strong> {{ patient.medical_record_number }}</p>
+        <p><strong>Blood Type:</strong> {{ patient.blood_type }}</p>
+        <p><strong>Allergies:</strong> {{ patient.allergies }}</p>
+    </div>
+    
+    <div class="record-list">
+        <h4>Medical Records</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Title</th>
+                    <th>Doctor</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in medical_records %}
+                <tr>
+                    <td>{{ record.created_at|date:"Y-m-d" }}</td>
+                    <td>{{ record.record_type }}</td>
+                    <td>{{ record.title }}</td>
+                    <td>{{ record.doctor_name }}</td>
+                    <td>
+                        <a href="{% url 'record_detail' record.id %}" class="btn btn-sm btn-primary">View</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">No medical records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <a href="{% url 'add_record' patient.id %}" class="btn btn-success">Add New Record</a>
+    </div>
+</div>
+{% endblock %}

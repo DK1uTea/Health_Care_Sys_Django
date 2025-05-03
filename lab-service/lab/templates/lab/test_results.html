@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Laboratory Test Results</h2>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Test Order Information</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Patient:</strong> {{ order.patient_name }}</p>
+                    <p><strong>Ordered By:</strong> Dr. {{ order.doctor_name }}</p>
+                    <p><strong>Order Date:</strong> {{ order.ordered_date|date:"Y-m-d H:i" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Order ID:</strong> {{ order.id }}</p>
+                    <p><strong>Status:</strong> {{ order.get_status_display }}</p>
+                    <p><strong>Priority:</strong> {{ order.priority }}</p>
+                </div>
+            </div>
+            {% if order.notes %}
+            <div class="row">
+                <div class="col-12">
+                    <p><strong>Notes:</strong> {{ order.notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h4>Test Results</h4>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Test</th>
+                        <th>Result</th>
+                        <th>Reference Range</th>
+                        <th>Status</th>
+                        <th>Performed</th>
+                        {% if user.user_type == 'LAB_TECH' and order.status != 'COMPLETED' %}
+                        <th>Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for test in ordered_tests %}
+                    <tr>
+                        <td>{{ test.test.name }} ({{ test.test.code }})</td>
+                        <td>
+                            {% if test.result %}
+                            {{ test.result.result_value }}
+                            {% else %}
+                            <span class="text-muted">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if test.result %}
+                            {{ test.result.reference_range }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if test.result %}
+                                {% if test.result.abnormal %}
+                                <span class="badge badge-danger">Abnormal</span>
+                                {% else %}
+                                <span class="badge badge-success">Normal</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="badge badge-secondary">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if test.result %}
+                            {{ test.result.performed_at|date:"Y-m-d H:i" }}<br>
+                            <small>by {{ test.result.technician_name }}</small>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        {% if user.user_type == 'LAB_TECH' and order.status != 'COMPLETED' %}
+                        <td>
+                            {% if not test.result %}
+                            <a href="{% url 'enter_test_result' test.id %}" class="btn btn-sm btn-primary">Enter Result</a>
+                            {% else %}
+                            <a href="{% url 'update_test_result' test.result.id %}" class="btn btn-sm btn-secondary">Update</a>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            {% if order.status == 'COMPLETED' and any_result %}
+            <div class="text-center mt-3">
+                <a href="{% url 'download_test_report' order.id %}" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Download Report
+                </a>
+            </div>
+            {% endif %}
+            
+            {% if user.user_type == 'LAB_TECH' and all_results_entered and order.status != 'COMPLETED' %}
+            <div class="text-center mt-3">
+                <a href="{% url 'complete_test_order' order.id %}" class="btn btn-success">
+                    Mark Order as Completed
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

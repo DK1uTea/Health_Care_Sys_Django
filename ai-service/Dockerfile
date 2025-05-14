@@ -2,22 +2,24 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Install system dependencies for ML libraries
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libffi-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Python dependencies
+# Install only essential dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir \
+    Django==3.2.19 \
+    djangorestframework==3.14.0 \
+    psycopg2-binary==2.9.6 \
+    requests==2.28.2 \
+    gunicorn==21.2.0 \
+    python-dotenv==1.0.0 \
+    django-cors-headers==4.0.0 \
+    dj-database-url==1.2.0 \
+    numpy==1.21.0
 
 # Copy project
 COPY . .
 
-# Create model directory
-RUN mkdir -p /app/models/diagnostic
+# Create the templates directory
+RUN mkdir -p /app/ai/templates/ai
 
-# Run migrations and start server
-EXPOSE 8006
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8006"]
+# Start the service
+CMD python manage.py migrate && python manage.py runserver 0.0.0.0:8006

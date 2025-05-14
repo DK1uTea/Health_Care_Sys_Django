@@ -1,80 +1,75 @@
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-import json
-import os
 
-class DiagnosticAssistant:
-    """Simplified diagnostic assistant using a mock classifier"""
+class HealthChatbot:
+    """A simplified healthcare chatbot using rule-based logic"""
     
     def __init__(self):
-        """Initialize with a simple model or load a pre-trained one"""
-        # In a real implementation, you would load a trained model
-        self.classifier = RandomForestClassifier(n_estimators=10)
-        self._mock_train()
-        
-    def _mock_train(self):
-        """Mock training on symptom data"""
-        # This is simplified mock data
-        X = np.random.rand(100, 20)  # 20 features representing symptoms
-        y = np.random.randint(0, 10, 100)  # 10 different diagnoses
-        self.classifier.fit(X, y)
-        
-        # Load ICD-10 codes for demonstration
-        self.icd10_codes = {
-            0: {"code": "J06.9", "name": "Acute upper respiratory infection"},
-            1: {"code": "J02.9", "name": "Acute pharyngitis"},
-            2: {"code": "J01.9", "name": "Acute sinusitis"},
-            3: {"code": "J18.9", "name": "Pneumonia, unspecified"},
-            4: {"code": "I10", "name": "Essential (primary) hypertension"},
-            5: {"code": "E11.9", "name": "Type 2 diabetes mellitus without complications"},
-            6: {"code": "M54.5", "name": "Low back pain"},
-            7: {"code": "R51", "name": "Headache"},
-            8: {"code": "K29.7", "name": "Gastritis, unspecified"},
-            9: {"code": "R10.4", "name": "Other and unspecified abdominal pain"}
+        self.symptom_names = ["Fever", "Cough", "Sneezing", "Fatigue", "Loss of Taste", "Itchy Eyes"]
+        self.diseases = ["Flu", "Cold", "COVID-19", "Allergy"]
+        self.symptom_disease_map = {
+            "Fever": ["Flu", "COVID-19"],
+            "Cough": ["Flu", "Cold", "COVID-19"],
+            "Sneezing": ["Cold", "Allergy"],
+            "Fatigue": ["Flu", "COVID-19"],
+            "Loss of Taste": ["COVID-19"],
+            "Itchy Eyes": ["Allergy"]
+        }
+        self.test_map = {
+            "Flu": "Influenza A/B test",
+            "Cold": "Nasal swab",
+            "COVID-19": "PCR test",
+            "Allergy": "Allergy skin test"
+        }
+        self.medicine_map = {
+            "Flu": "Oseltamivir (Tamiflu)",
+            "Cold": "Rest, fluids, antihistamines",
+            "COVID-19": "Isolation + Paracetamol",
+            "Allergy": "Loratadine or Cetirizine"
         }
     
-    def analyze_symptoms(self, symptoms, patient_data=None):
-        """
-        Analyze symptoms and return possible diagnoses
+    def get_diagnosis(self, symptoms_dict):
+        """Simple rule-based diagnosis"""
+        # Count symptoms for each disease
+        disease_scores = {disease: 0 for disease in self.diseases}
         
-        Args:
-            symptoms (list): List of symptoms
-            patient_data (dict): Patient demographic and history data
-            
-        Returns:
-            dict: Diagnosis results with confidence scores
-        """
-        # Convert symptoms to feature vector (simplified)
-        symptom_vector = self._process_symptoms(symptoms)
+        for symptom, has_symptom in symptoms_dict.items():
+            if has_symptom == 1 and symptom in self.symptom_disease_map:
+                for disease in self.symptom_disease_map[symptom]:
+                    disease_scores[disease] += 1
         
-        # Get prediction probabilities
-        proba = self.classifier.predict_proba(symptom_vector.reshape(1, -1))[0]
+        # Find the disease with highest score
+        max_score = 0
+        diagnosis = "Cold"  # Default diagnosis
         
-        # Sort by probability and get top 3
-        top_indices = proba.argsort()[-3:][::-1]
-        top_probas = proba[top_indices]
+        for disease, score in disease_scores.items():
+            if score > max_score:
+                max_score = score
+                diagnosis = disease
         
-        # Format results
-        diagnoses = []
-        for i, idx in enumerate(top_indices):
-            diagnoses.append({
-                "icd_code": self.icd10_codes[idx]["code"],
-                "name": self.icd10_codes[idx]["name"],
-                "confidence": float(top_probas[i])
-            })
+        # Calculate confidence (simplified)
+        total_symptoms = sum(symptoms_dict.values())
+        confidence = 0.5  # Base confidence
+        if total_symptoms > 0:
+            confidence = min(0.9, 0.5 + (max_score / total_symptoms) * 0.4)
         
         return {
-            "diagnoses": diagnoses,
-            "processing_time": "0.5 seconds"
+            "diagnosis": diagnosis,
+            "test": self.test_map.get(diagnosis, "Consult your doctor"),
+            "medicine": self.medicine_map.get(diagnosis, "Consult your doctor"),
+            "results": [
+                {"name": d, "probability": 0.8 if d == diagnosis else 0.2, "uncertainty": 0.1} 
+                for d in self.diseases
+            ],
+            "confidence": confidence,
+            "uncertainty": 0.1
         }
+
+
+class DiagnosticAssistant:
+    """Placeholder for existing diagnostic assistant"""
     
-    def _process_symptoms(self, symptoms):
-        """
-        Process symptoms into a feature vector
-        In a real implementation, this would use NLP and medical ontologies
-        """
-        # For demo, just create a random vector with a seed based on symptoms
-        # to ensure consistent results for the same input
-        seed = sum(hash(s) % 10000 for s in symptoms)
-        np.random.seed(seed)
-        return np.random.rand(20)  # 20 features
+    def __init__(self):
+        pass
+        
+    def diagnose(self, symptoms):
+        return {"diagnosis": "Sample diagnosis", "confidence": 0.8}

@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Prescription, Medication, InventoryItem
+from .models import PrescriptionFulfillment, Medication, MedicationInventory
 
 def prescription_list(request):
     # Mock data or fetch actual data based on user type

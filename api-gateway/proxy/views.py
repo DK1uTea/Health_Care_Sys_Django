@@ -15,6 +15,17 @@ class ProxyView(APIView):
     service = None
     path = ''
     
+    # Add this dictionary definition as a class attribute
+    service_names = {
+        'auth': 'auth-service',
+        'ehr': 'ehr-service',
+        'appointment': 'appointment-service',
+        'pharmacy': 'pharmacy-service',
+        'lab': 'lab-service',
+        'billing': 'billing-service',
+        'ai': 'ai-service'
+    }
+    
     def __init__(self, service=None, path='', **kwargs):
         super().__init__(**kwargs)
         if service:
@@ -31,11 +42,21 @@ class ProxyView(APIView):
         if service not in settings.SERVICE_ROUTES:
             return Response({"error": f"Service '{service}' not found"}, status=404)
         
-        # Construct the target URL
+        # Construct the target URL with correct path handling
         route_config = settings.SERVICE_ROUTES[service]
         target_host = route_config['host']
         target_port = route_config['port']
-        target_url = f"http://{target_host}:{target_port}/{path}"
+        
+        # Check if this is an API request
+        is_api_request = request.path.startswith('/api/')
+        
+        if is_api_request:
+            # For API requests that come through /api/{service}/{path}
+            # Rewrite to the service's API endpoint: http://{service}:port/api/{path}
+            target_url = f"http://{target_host}:{target_port}/api/{path}"
+        else:
+            # For UI requests, keep as is
+            target_url = f"http://{target_host}:{target_port}/{path}"
         
         # Forward the request headers
         headers = {}
@@ -61,7 +82,7 @@ class ProxyView(APIView):
             request_func = getattr(requests, method)
             
             # Handle request data based on method
-            kwargs = {'headers': headers, 'allow_redirects': False}
+            kwargs = {'headers': headers, 'allow_redirects': False, 'timeout': 10.0}  # Add timeout
             
             if method in ['post', 'put', 'patch']:
                 if request.content_type and 'application/json' in request.content_type:
@@ -74,6 +95,9 @@ class ProxyView(APIView):
             
             # Make the request
             response = request_func(target_url, **kwargs)
+            
+            # Process the response
+            response = self.process_response(response)
             
             # Create Django response
             django_response = HttpResponse(
@@ -90,12 +114,42 @@ class ProxyView(APIView):
             # Return the Django response
             return django_response
                 
+        except requests.Timeout:
+            logger.error(f"Timeout connecting to {target_url}")
+            return Response(
+                {"error": "Service timeout", "details": f"The {service} service took too long to respond"},
+                status=504  # Gateway Timeout
+            )
+        except requests.ConnectionError:
+            logger.error(f"Cannot connect to {target_url}")
+            return Response(
+                {"error": "Service unavailable", "details": f"Could not connect to the {service} service"},
+                status=503  # Service Unavailable
+            )
         except requests.RequestException as e:
             logger.error(f"Error proxying request to {target_url}: {e}")
             return Response(
-                {"error": "Service unavailable", "details": str(e)},
-                status=503
+                {"error": "Service error", "details": str(e)},
+                status=500  # Internal Server Error
             )
+
+    def process_response(self, response):
+        """Process the response from the proxied service"""
+        # Handle redirects properly - convert them to gateway URLs
+        if response.status_code in [301, 302, 307] and 'Location' in response.headers:
+            location = response.headers['Location']
+            # Only modify internal redirects, not external ones
+            if not location.startswith('http'):
+                # Strip service name if present
+                for service in settings.SERVICE_ROUTES.keys():  # Use settings instead
+                    prefix = f'/{service}/'
+                    if location.startswith(prefix):
+                        location = location[len(prefix):]
+                        location = f'/{self.service}/{location}'
+                        break
+                response.headers['Location'] = location
+        
+        return response
 
 
 class UIRedirectView(View):

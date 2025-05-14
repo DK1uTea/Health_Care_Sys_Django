@@ -177,32 +177,24 @@
         function analyzeSymptomsWithAI() {
             $('#analyzeBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analyzing...');
             
-            // In a real app, this would be an AJAX call to your API
-            // For demo purposes, we'll simulate a delayed response with mock data
-            setTimeout(function() {
-                const mockResults = {
-                    diagnoses: [
-                        {
-                            icd_code: "J06.9",
-                            name: "Acute upper respiratory infection",
-                            confidence: 0.82
-                        },
-                        {
-                            icd_code: "J02.9",
-                            name: "Acute pharyngitis",
-                            confidence: 0.67
-                        },
-                        {
-                            icd_code: "J01.9",
-                            name: "Acute sinusitis",
-                            confidence: 0.45
-                        }
-                    ]
-                };
-                
-                displayResults(mockResults);
-                $('#analyzeBtn').prop('disabled', false).text('Analyze Symptoms');
-            }, 1500);
+            // Call the actual API endpoint
+            $.ajax({
+                url: '/api/diagnosis/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ 
+                    symptoms: symptoms,
+                    patient_id: $('#patientSelect').val() 
+                }),
+                success: function(data) {
+                    displayResults(data);
+                    $('#analyzeBtn').prop('disabled', false).text('Analyze Symptoms');
+                },
+                error: function() {
+                    alert('Error analyzing symptoms. Please try again.');
+                    $('#analyzeBtn').prop('disabled', false).text('Analyze Symptoms');
+                }
+            });
         }
         
         function displayResults(results) {

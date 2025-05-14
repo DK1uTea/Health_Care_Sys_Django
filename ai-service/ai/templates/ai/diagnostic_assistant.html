@@ -11,11 +11,10 @@
         <div class="card-body">
             <form id="symptomForm">
                 <div class="form-group">
-                    <label for="patientSelect">Patient</label>
-                    <select class="form-control" id="patientSelect" required>
-                        <option value="">-- Select Patient --</option>
+                    <label for="patientSelect">Select Patient:</label>
+                    <select class="form-control" id="patientSelect">
                         {% for patient in patients %}
-                        <option value="{{ patient.id }}">{{ patient.full_name }}</option>
+                            <option value="{{ patient.id }}">{{ patient.full_name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -38,11 +37,19 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="symptomsInput">Enter Symptoms</label>
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="symptomsInput" placeholder="Enter a symptom">
+                    <label for="symptomsInput">Enter Symptoms:</label>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="symptomsInput" placeholder="Type a symptom">
                         <div class="input-group-append">
-                            <button class="btn btn-outline-secondary" type="button" id="addSymptomBtn">Add</button>
+                            <button class="btn btn-primary" type="button" id="addSymptomBtn">Add</button>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <h6>Common symptoms:</h6>
+                        <div class="symptom-suggestions">
+                            {% for symptom in common_symptoms %}
+                                <button class="btn btn-sm btn-outline-secondary mr-1 mb-1" onclick="addSuggestion('{{ symptom }}')">{{ symptom }}</button>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
@@ -128,7 +135,7 @@
                     $('#symptomsList').empty();
                 }
                 
-                const listItem = $('<li class="list-group-item d-flex justify-content-between align-items-center"></li>');
+                const listItem = $('<li class="list-group-item d-flex justify-content-between align-items-center symptom-item"></li>');
                 listItem.text(symptom);
                 
                 const removeBtn = $('<button class="btn btn-sm btn-outline-danger"><i class="fas fa-times"></i></button>');
@@ -177,7 +184,18 @@
         function analyzeSymptomsWithAI() {
             $('#analyzeBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analyzing...');
             
-            // Call the actual API endpoint
+            // Get the selected symptoms
+            const symptoms = [];
+            $('#symptomsList .symptom-item').each(function() {
+                symptoms.push($(this).text().trim());
+            });
+            
+            if (symptoms.length === 0) {
+                alert('Please add at least one symptom');
+                $('#analyzeBtn').prop('disabled', false).text('Analyze Symptoms');
+                return;
+            }
+            
             $.ajax({
                 url: '/api/diagnosis/',
                 type: 'POST',
@@ -186,12 +204,12 @@
                     symptoms: symptoms,
                     patient_id: $('#patientSelect').val() 
                 }),
-                success: function(data) {
-                    displayResults(data);
+                success: function(response) {
+                    displayResults(response);
                     $('#analyzeBtn').prop('disabled', false).text('Analyze Symptoms');
                 },
-                error: function() {
-                    alert('Error analyzing symptoms. Please try again.');
+                error: function(xhr, status, error) {
+                    alert('Error analyzing symptoms: ' + error);
                     $('#analyzeBtn').prop('disabled', false).text('Analyze Symptoms');
                 }
             });

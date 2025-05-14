@@ -8,8 +8,27 @@ import uuid
 
 def diagnostic_assistant(request):
     """Render the diagnostic assistant page"""
-    # Fix: Use the correct template name
-    return render(request, 'ai/diagnostic_assistant.html')
+    # Add mock patients for the dropdown
+    mock_patients = [
+        {'id': 1, 'full_name': 'John Doe'},
+        {'id': 2, 'full_name': 'Jane Smith'},
+        {'id': 3, 'full_name': 'Robert Johnson'},
+        {'id': 4, 'full_name': 'Emily Williams'}
+    ]
+    
+    # Common symptoms for the symptom selector
+    common_symptoms = [
+        "Fever", "Cough", "Headache", "Fatigue", "Sore throat", 
+        "Shortness of breath", "Muscle pain", "Nausea", "Vomiting",
+        "Diarrhea", "Loss of taste", "Loss of smell", "Chills",
+        "Joint pain", "Chest pain", "Abdominal pain", "Dizziness",
+        "Runny nose", "Congestion", "Rash"
+    ]
+    
+    return render(request, 'ai/diagnostic_assistant.html', {
+        'patients': mock_patients,
+        'common_symptoms': common_symptoms
+    })
 
 class DiagnosisAPI(APIView):
     """API for diagnostic assistant"""

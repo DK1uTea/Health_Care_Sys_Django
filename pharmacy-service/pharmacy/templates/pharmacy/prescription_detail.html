@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Prescription Details</h4>
+            <span class="badge {% if prescription.status == 'PENDING' %}badge-warning
+                  {% elif prescription.status == 'VERIFIED' %}badge-info
+                  {% elif prescription.status == 'DISPENSED' %}badge-success
+                  {% else %}badge-secondary{% endif %}">
+                {{ prescription.get_status_display }}
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5>Patient Information</h5>
+                    <p><strong>Name:</strong> {{ prescription.patient_name }}</p>
+                    <p><strong>Patient ID:</strong> {{ prescription.patient_id }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h5>Prescription Information</h5>
+                    <p><strong>Date:</strong> {{ prescription.created_at|date:"Y-m-d" }}</p>
+                    <p><strong>Prescribing Doctor:</strong> {{ prescription.doctor_name }}</p>
+                </div>
+            </div>
+            
+            <h5>Medications</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Medication</th>
+                            <th>Quantity</th>
+                            <th>Instructions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for medication in prescription.medications %}
+                        <tr>
+                            <td>{{ medication.medication_name }}</td>
+                            <td>{{ medication.quantity }}</td>
+                            <td>{{ medication.instructions }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if prescription.notes %}
+            <div class="alert alert-info mt-3">
+                <h5>Notes</h5>
+                <p>{{ prescription.notes }}</p>
+            </div>
+            {% endif %}
+            
+            <div class="mt-4">
+                <a href="{% url 'prescription_list' %}" class="btn btn-secondary">Back to Prescriptions</a>
+                
+                {% if prescription.status == 'PENDING' and user.user_type == 'PHARMACIST' %}
+                <a href="{% url 'verify_prescription' prescription.id %}" class="btn btn-success">Verify Prescription</a>
+                {% endif %}
+                
+                {% if prescription.status == 'VERIFIED' and user.user_type == 'PHARMACIST' %}
+                <a href="{% url 'dispense_prescription' prescription.id %}" class="btn btn-primary">Dispense Medication</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

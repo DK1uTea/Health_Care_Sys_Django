@@ -29,11 +29,11 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     
-    # Template views
+    # Template views - changed <int:id> to <uuid:id>
     path('prescriptions/', prescription_list, name='prescription_list'),
-    path('prescriptions/<int:id>/', prescription_detail, name='prescription_detail'),
-    path('prescriptions/<int:id>/verify/', verify_prescription, name='verify_prescription'),
-    path('prescriptions/<int:id>/dispense/', dispense_prescription, name='dispense_prescription'),
+    path('prescriptions/<uuid:id>/', prescription_detail, name='prescription_detail'),
+    path('prescriptions/<uuid:id>/verify/', verify_prescription, name='verify_prescription'),
+    path('prescriptions/<uuid:id>/dispense/', dispense_prescription, name='dispense_prescription'),
     path('medications/add/', add_medication, name='add_medication'),
     path('inventory/<int:id>/update/', update_inventory, name='update_inventory'),
     path('', lambda request: redirect('prescription_list')),  # Redirect to prescription list

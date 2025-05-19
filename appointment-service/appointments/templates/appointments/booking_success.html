@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="alert alert-success mt-4">
+        <h4 class="alert-heading">Appointment Booked Successfully!</h4>
+        <p>Your appointment has been scheduled.</p>
+    </div>
+    
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            Appointment Details
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">Appointment with Dr. {{ appointment.doctor_name }}</h5>
+            <p class="card-text"><strong>Date:</strong> {{ appointment.date }}</p>
+            <p class="card-text"><strong>Time:</strong> {{ appointment.time }}</p>
+            <p class="card-text"><strong>Reason:</strong> {{ appointment.reason }}</p>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'appointment_list' %}" class="btn btn-primary">Back to Appointments</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

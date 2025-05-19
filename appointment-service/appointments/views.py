@@ -77,7 +77,15 @@ def appointment_list(request):
     # Mock data for demo
     upcoming_appointments = []
     past_appointments = []
-    doctors = []
+    
+    # Add mock doctors for demonstration
+    doctors = [
+        {'id': 1, 'name': 'John Smith', 'specialization': 'Cardiology'},
+        {'id': 2, 'name': 'Sara Johnson', 'specialization': 'Neurology'},
+        {'id': 3, 'name': 'David Chen', 'specialization': 'Pediatrics'},
+        {'id': 4, 'name': 'Maria Rodriguez', 'specialization': 'Orthopedics'},
+        {'id': 5, 'name': 'Robert Wilson', 'specialization': 'Dermatology'}
+    ]
     
     context = {
         'upcoming_appointments': upcoming_appointments,
@@ -91,3 +99,52 @@ def appointment_detail(request, id):
     # Mock appointment detail
     appointment = {'id': id}
     return render(request, 'appointments/appointment_detail.html', {'appointment': appointment})
+
+def book_appointment(request):
+    """Handle appointment booking form submission"""
+    if request.method == 'POST':
+        doctor_id = request.POST.get('doctor')
+        date_str = request.POST.get('date')
+        time_slot = request.POST.get('time_slot')
+        reason = request.POST.get('reason')
+        
+        # In a real app, validate the data and create a real Appointment object
+        # For demo, just show success and redirect
+        
+        # Example of creating a real appointment (commented out for mock version)
+        # try:
+        #     doctor = Doctor.objects.get(id=doctor_id)
+        #     appointment_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        #     start_time, end_time = time_slot.split('-')
+        #     
+        #     appointment = Appointment.objects.create(
+        #         patient_id=request.user.id,  # In a real app
+        #         doctor=doctor,
+        #         appointment_date=appointment_date,
+        #         start_time=start_time,
+        #         end_time=end_time,
+        #         reason=reason,
+        #         status='SCHEDULED'
+        #     )
+        # except Exception as e:
+        #     # Handle errors
+        #     return render(request, 'appointments/error.html', {'error': str(e)})
+        
+        # For now, just return a success page
+        return render(request, 'appointments/booking_success.html', {
+            'appointment': {
+                'doctor_name': next((d['name'] for d in [
+                    {'id': 1, 'name': 'John Smith'},
+                    {'id': 2, 'name': 'Sara Johnson'},
+                    {'id': 3, 'name': 'David Chen'},
+                    {'id': 4, 'name': 'Maria Rodriguez'},
+                    {'id': 5, 'name': 'Robert Wilson'}
+                ] if str(d['id']) == doctor_id), 'Unknown Doctor'),
+                'date': date_str,
+                'time': time_slot,
+                'reason': reason
+            }
+        })
+    
+    # If not a POST request, redirect to appointment list
+    return redirect('appointment_list')

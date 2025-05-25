@@ -45,28 +45,50 @@ def health_chatbot(request):
     })
 
 class ChatbotAPI(APIView):
-    """API endpoint for chatbot interactions"""
+    """API endpoint for the health chatbot"""
     
     def post(self, request):
+        message = request.data.get('message', '')
+        symptoms = request.data.get('symptoms', None)
+        session_id = request.session.session_key
+        
         chatbot = HealthChatbot()
         
-        if 'symptoms' in request.data:
-            # Process symptoms
-            diagnosis = chatbot.get_diagnosis(request.data.get('symptoms', {}))
-            
-            response_text = f"Based on your symptoms, you may have {diagnosis['diagnosis']}.\n"
-            response_text += f"Recommended test: {diagnosis['test']}\n"
-            response_text += f"Recommended medicine: {diagnosis['medicine']}"
-            
-            return Response({
-                'message': response_text,
-                'diagnosis': diagnosis,
-            })
+        if not session_id:
+            request.session.save()
+            session_id = request.session.session_key
+        
+        if symptoms:
+            # Handle symptom checker form submission
+            result = self._analyze_symptom_form(chatbot, symptoms)
+            return Response(result)
         else:
-            # Simple response for text messages
-            message = request.data.get('message', '')
-            response_text = "I'm your healthcare assistant. Please check your symptoms using the symptom checker."
-            
-            return Response({
-                'message': response_text
-            })
+            # Handle conversational messages
+            result = chatbot.process_message(message, session_id)
+            return Response(result)
+    
+    def _analyze_symptom_form(self, chatbot, symptoms):
+        """Process structured symptom data from the form"""
+        # Calculate which symptoms are present (value = 1)
+        present_symptoms = [s for s, v in symptoms.items() if v == 1]
+        
+        if not present_symptoms:
+            return {
+                "message": "You haven't selected any symptoms. It seems you're feeling well!",
+            }
+        
+        # Create symptom dictionary in required format
+        symptom_dict = {s: 1 if s in present_symptoms else 0 for s in chatbot.symptom_names}
+        
+        # Get diagnosis
+        diagnosis = chatbot._make_diagnosis(symptom_dict)
+        
+        # Construct response
+        response_message = f"Based on your symptoms, you might have {diagnosis['diagnosis']}. "
+        response_message += f"I recommend getting a {diagnosis['test']} to confirm this. "
+        response_message += f"Typical treatment includes {diagnosis['medicine']}."
+        
+        return {
+            "message": response_message,
+            "diagnosis": diagnosis
+        }

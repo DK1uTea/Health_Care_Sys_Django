@@ -1,5 +1,47 @@
 {% extends "base.html" %}
 
+{% block extra_css %}
+<style>
+    @keyframes blink {
+        0% { opacity: .2; }
+        20% { opacity: 1; }
+        100% { opacity: .2; }
+    }
+    .typing-dots { animation: blink 1.4s infinite both; }
+    
+    .message-content {
+        max-width: 80%;
+        display: inline-block;
+    }
+    
+    .user-message {
+        text-align: right;
+    }
+    
+    .user-message .message-content {
+        text-align: left;
+    }
+    
+    .suggestion-chip {
+        display: inline-block;
+        background-color: #e9ecef;
+        border-radius: 16px;
+        padding: 6px 12px;
+        margin: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .suggestion-chip:hover {
+        background-color: #dee2e6;
+    }
+    
+    #typingIndicator {
+        display: none;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <h2>Healthcare Chatbot</h2>
@@ -16,6 +58,22 @@
                             Hello! I'm your healthcare chatbot assistant. How can I help you today?
                         </div>
                     </div>
+                    <div class="message bot-message mb-2">
+                        <div class="message-content p-2 rounded bg-light">
+                            You can tell me about your symptoms, or try some common phrases like:
+                            <div class="mt-2">
+                                <span class="suggestion-chip" onclick="suggestPhrase(this)">I have a fever and cough</span>
+                                <span class="suggestion-chip" onclick="suggestPhrase(this)">My head hurts</span>
+                                <span class="suggestion-chip" onclick="suggestPhrase(this)">I feel tired all the time</span>
+                                <span class="suggestion-chip" onclick="suggestPhrase(this)">I'm having trouble breathing</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="typingIndicator" class="message bot-message mb-2">
+                    <div class="message-content p-2 rounded bg-light">
+                        <span class="typing-dots">...</span>
+                    </div>
                 </div>
             </div>
             
@@ -24,37 +82,9 @@
                 <p>Please indicate which symptoms you have:</p>
                 
                 <form id="symptomsForm">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="symptom_Fever">
-                                <label class="form-check-label" for="symptom_Fever">Fever</label>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="symptom_Cough">
-                                <label class="form-check-label" for="symptom_Cough">Cough</label>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="symptom_Sneezing">
-                                <label class="form-check-label" for="symptom_Sneezing">Sneezing</label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="symptom_Fatigue">
-                                <label class="form-check-label" for="symptom_Fatigue">Fatigue</label>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="symptom_Loss_of_Taste">
-                                <label class="form-check-label" for="symptom_Loss_of_Taste">Loss of Taste</label>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="symptom_Itchy_Eyes">
-                                <label class="form-check-label" for="symptom_Itchy_Eyes">Itchy Eyes</label>
-                            </div>
-                        </div>
+                    <div class="row" id="symptomCheckboxes">
+                        <!-- Dynamically populated -->
                     </div>
-                    
                     <button type="button" id="submitSymptoms" class="btn btn-primary mt-2">Submit Symptoms</button>
                 </form>
             </div>
@@ -66,7 +96,10 @@
             
             <div class="mt-3">
                 <button id="startSymptomChecker" class="btn btn-outline-info">
-                    Start Symptom Check
+                    <i class="fas fa-clipboard-check"></i> Use Symptom Checker
+                </button>
+                <button id="clearChat" class="btn btn-outline-secondary ml-2">
+                    <i class="fas fa-trash"></i> Clear Chat
                 </button>
             </div>
         </div>
@@ -81,7 +114,9 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const chatMessages = document.getElementById('chatMessages');
@@ -93,6 +128,53 @@
         const submitSymptomsButton = document.getElementById('submitSymptoms');
         const diagnosisResults = document.getElementById('diagnosisResults');
         const diagnosisCard = document.getElementById('diagnosisResultsCard');
+        const clearChatButton = document.getElementById('clearChat');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const symptomCheckboxes = document.getElementById('symptomCheckboxes');
+        
+        // Available symptoms
+        const availableSymptoms = [
+            "Fever", "Cough", "Sneezing", "Fatigue", "Loss of Taste", "Itchy Eyes",
+            "Headache", "Sore Throat", "Runny Nose", "Shortness of Breath", 
+            "Muscle Pain", "Joint Pain", "Rash", "Chest Pain", "Nausea",
+            "Vomiting", "Diarrhea", "Dizziness", "Confusion"
+        ];
+        
+        // Populate symptom checkboxes
+        function populateSymptomCheckboxes() {
+            let leftColumn = document.createElement('div');
+            leftColumn.className = 'col-md-6';
+            
+            let rightColumn = document.createElement('div');
+            rightColumn.className = 'col-md-6';
+            
+            availableSymptoms.forEach((symptom, index) => {
+                const column = index < availableSymptoms.length / 2 ? leftColumn : rightColumn;
+                
+                const checkboxDiv = document.createElement('div');
+                checkboxDiv.className = 'form-check mb-2';
+                
+                const input = document.createElement('input');
+                input.className = 'form-check-input';
+                input.type = 'checkbox';
+                input.id = `symptom_${symptom.replace(/ /g, '_')}`;
+                
+                const label = document.createElement('label');
+                label.className = 'form-check-label';
+                label.htmlFor = input.id;
+                label.textContent = symptom;
+                
+                checkboxDiv.appendChild(input);
+                checkboxDiv.appendChild(label);
+                column.appendChild(checkboxDiv);
+            });
+            
+            symptomCheckboxes.appendChild(leftColumn);
+            symptomCheckboxes.appendChild(rightColumn);
+        }
+        
+        // Initialize symptom checkboxes
+        populateSymptomCheckboxes();
         
         // Scroll chat to bottom
         function scrollToBottom() {
@@ -113,35 +195,178 @@
             scrollToBottom();
         }
         
+        // Show typing indicator
+        function showTyping() {
+            typingIndicator.style.display = 'block';
+            scrollToBottom();
+        }
+        
+        // Hide typing indicator
+        function hideTyping() {
+            typingIndicator.style.display = 'none';
+        }
+        
         // Send message
-        sendButton.addEventListener('click', function() {
-            const message = userMessageInput.value.trim();
-            if (!message) return;
+        function sendUserMessage(message) {
+            if (!message.trim()) return;
             
             addMessage(message, false);
             userMessageInput.value = '';
+            
+            showTyping();
             
             // Send to API
             fetch('/api/chatbot/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
                 },
                 body: JSON.stringify({ message: message }),
             })
             .then(response => response.json())
             .then(data => {
+                hideTyping();
+                
+                // Add the bot's response
                 addMessage(data.message, true);
+                
+                // If this is an emergency
+                if (data.is_emergency) {
+                    addMessage('<div class="alert alert-danger"><strong>WARNING:</strong> This may be a medical emergency. Please seek immediate medical attention or call emergency services.</div>', true);
+                }
+                
+                // If we have a diagnosis with detailed info, show it in a structured format
+                if (data.diagnosis && data.diagnosis.detailed_info) {
+                    diagnosisCard.style.display = 'block';
+                    
+                    const info = data.diagnosis.detailed_info;
+                    diagnosisResults.innerHTML = `
+                        <div class="alert alert-info">
+                            <h5>Primary Diagnosis: ${data.diagnosis.diagnosis}</h5>
+                            <p>Confidence: ${(data.diagnosis.confidence * 100).toFixed(1)}%</p>
+                        </div>
+                        
+                        <div class="card mb-3">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">About this Condition</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>${info.description}</p>
+                                
+                                <h6>Common Symptoms</h6>
+                                <p>${info.symptoms}</p>
+                                
+                                <h6>Who is at Risk</h6>
+                                <p>${info.risk_groups}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-info text-white">
+                                        <h5 class="mb-0">Testing</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>${data.diagnosis.test}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-success text-white">
+                                        <h5 class="mb-0">Treatment</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>${data.diagnosis.medicine}</p>
+                                        
+                                        ${info.prescription_meds.length > 0 ? 
+                                            `<h6>Prescription Options</h6>
+                                            <ul>${info.prescription_meds.map(med => `<li>${med}</li>`).join('')}</ul>` : ''}
+                                        
+                                        ${info.otc_meds.length > 0 ? 
+                                            `<h6>Over-the-Counter Options</h6>
+                                            <ul>${info.otc_meds.map(med => `<li>${med}</li>`).join('')}</ul>` : ''}
+                                        
+                                        ${info.dosage_notes ? `<h6>Dosage Notes</h6><p>${info.dosage_notes}</p>` : ''}
+                                        ${info.side_effects ? `<h6>Possible Side Effects</h6><p>${info.side_effects}</p>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h5 class="mb-0">Prevention</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>${info.prevention}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-danger text-white">
+                                        <h5 class="mb-0">When to See a Doctor</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>${info.when_to_see_doctor}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-secondary mt-3">
+                            <small><strong>Disclaimer:</strong> This information is for educational purposes only and is not a substitute for professional medical advice. Always consult with a qualified healthcare provider for diagnosis and treatment.</small>
+                        </div>
+                    `;
+                } else if (data.diagnosis) {
+                    // Fallback for when we only have basic diagnosis info
+                    diagnosisCard.style.display = 'block';
+                    
+                    diagnosisResults.innerHTML = `
+                        <div class="alert alert-info">
+                            <h5>Primary Diagnosis: ${data.diagnosis.diagnosis}</h5>
+                            <p>Confidence: ${(data.diagnosis.confidence * 100).toFixed(1)}%</p>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h5>Recommended Test</h5>
+                                <p>${data.diagnosis.test}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Recommended Treatment</h5>
+                                <p>${data.diagnosis.medicine}</p>
+                            </div>
+                        </div>
+                    `;
+                }
             })
             .catch(() => {
+                hideTyping();
                 addMessage("Sorry, I'm having trouble responding right now.", true);
             });
+        }
+        
+        // Suggest a phrase
+        window.suggestPhrase = function(element) {
+            const phrase = element.textContent;
+            userMessageInput.value = phrase;
+            sendUserMessage(phrase);
+        };
+        
+        // Send button click
+        sendButton.addEventListener('click', function() {
+            sendUserMessage(userMessageInput.value.trim());
         });
         
         // Enter key to send
         userMessageInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                sendButton.click();
+                sendUserMessage(userMessageInput.value.trim());
             }
         });
         
@@ -153,14 +378,13 @@
         
         // Submit symptoms
         submitSymptomsButton.addEventListener('click', function() {
-            const symptoms = {
-                "Fever": document.getElementById('symptom_Fever').checked ? 1 : 0,
-                "Cough": document.getElementById('symptom_Cough').checked ? 1 : 0,
-                "Sneezing": document.getElementById('symptom_Sneezing').checked ? 1 : 0,
-                "Fatigue": document.getElementById('symptom_Fatigue').checked ? 1 : 0,
-                "Loss of Taste": document.getElementById('symptom_Loss_of_Taste').checked ? 1 : 0,
-                "Itchy Eyes": document.getElementById('symptom_Itchy_Eyes').checked ? 1 : 0
-            };
+            const symptoms = {};
+            
+            availableSymptoms.forEach(symptom => {
+                const checkboxId = `symptom_${symptom.replace(/ /g, '_')}`;
+                const checkbox = document.getElementById(checkboxId);
+                symptoms[symptom] = checkbox.checked ? 1 : 0;
+            });
             
             // Display selected symptoms
             let symptomList = "My symptoms are:<br>";
@@ -178,11 +402,14 @@
             
             addMessage(symptomList, false);
             
+            showTyping();
+            
             // Send to API
             fetch('/api/chatbot/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
                 },
                 body: JSON.stringify({ 
                     message: "Analyzing symptoms",
@@ -191,6 +418,8 @@
             })
             .then(response => response.json())
             .then(data => {
+                hideTyping();
+                
                 addMessage(data.message, true);
                 
                 if (data.diagnosis) {
@@ -220,8 +449,37 @@
                 startSymptomButton.style.display = 'inline-block';
             })
             .catch(() => {
+                hideTyping();
                 addMessage("Sorry, I couldn't analyze your symptoms.", true);
             });
+        });
+        
+        // Clear chat
+        clearChatButton.addEventListener('click', function() {
+            // Keep only the welcome message
+            while (chatMessages.children.length > 2) {
+                chatMessages.removeChild(chatMessages.lastChild);
+            }
+            
+            // Hide diagnosis card
+            diagnosisCard.style.display = 'none';
+            
+            // Reset symptom checkboxes
+            availableSymptoms.forEach(symptom => {
+                const checkboxId = `symptom_${symptom.replace(/ /g, '_')}`;
+                const checkbox = document.getElementById(checkboxId);
+                if (checkbox) checkbox.checked = false;
+            });
+            
+            // Hide symptom checker
+            symptomChecker.style.display = 'none';
+            startSymptomButton.style.display = 'inline-block';
+            
+            // Reset input
+            userMessageInput.value = '';
+            
+            // Focus on input
+            userMessageInput.focus();
         });
         
         // Initial scroll
